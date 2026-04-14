@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Webpage Multi Viewer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      font-family: 'Segoe UI', system-ui, Roboto, sans-serif;
+    }
+
+    body {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: #181822;
+      color: #eaeaef;
+    }
+
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 2px 2px;
+      background: #242433;
+      border-bottom: 1px solid #3f3f5a;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .tab-selector {
+      background: #2f2f45;
+      border: 1px solid #5a5a80;
+      border-radius: 24px;
+      padding: 2px 2px;
+      color: #ddd;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .tab-selector option {
+      background: #1e1e2e;
+    }
+
+    .url-wrapper {
+      flex: 1;
+      display: flex;
+      gap: 2px;
+    }
+
+    #urlInput {
+      flex: 1;
+      background: #101018;
+      border: 1px solid #4a4a6a;
+      border-radius: 10px;
+      padding: 5px 6px;
+      color: #f0f0ff;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    #urlInput:focus {
+      border-color: #8a8aff;
+    }
+
+    #goBtn {
+      background: #5f5fdf;
+      border: none;
+      border-radius: 30px;
+      padding: 5px 6px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      border: 1px solid #8a8aff;
+      font-size: 0.85rem;
+      transition: 0.15s;
+    }
+
+    #goBtn:hover {
+      background: #7a7aff;
+    }
+
+    /* main area */
+    .main-panel {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* iframe stage */
+    .iframe-stage {
+      flex: 1;
+      background: #0c0c16;
+      padding: 2px;
+      overflow: hidden;
+    }
+
+    .iframe-grid {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      gap: 2px;
+      transition: all 0.1s;
+    }
+
+    /* Layout mode */
+    .iframe-grid.layout-single {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
+    }
+
+    .iframe-grid.layout-grid {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+    }
+
+    .iframe-grid.layout-vertical {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr 1fr;
+    }
+
+    .iframe-grid.layout-horizontal {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr;
+    }
+
+    .iframe-card {
+      background: #1e1e30;
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid #3a3a60;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .iframe-card.active-iframe {
+      border: 3px solid #5fcb00;
+    }
+
+    .iframe-card iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #ffffff;
+    }
+
+    /* Right sidebar */
+    .sidebar {
+      width: 40px;
+      background: #1e1e30;
+      border-left: 1px solid #3a3a5e;
+      padding: 2px 2px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: -2px 0 8px rgba(0,0,0,0.3);
+    }
+
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .sidebar-header span {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #b5b5ff;
+      letter-spacing: 0.3px;
+    }
+
+    .help-btn {
+      background: none;
+      border: 1px solid #5a5a8a;
+      color: #ccc;
+      width: 24px;
+      height: 24px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #2a2a44;
+    }
+
+    .help-btn:hover {
+      background: #4a4a7a;
+      color: white;
+    }
+
+    /* Tab quick switching buttons (1️⃣2️⃣3️⃣4️⃣)*/
+    .tab-switch-row {
+      /*display: flex;*/
+      justify-content: space-around;
+      gap: 2px;
+    }
+
+    .tab-btn {
+      background: #2d2d48;
+      border: 1px solid #56568a;
+      color: #eee;
+      font-size: 1.2rem;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: 0.1s;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .tab-btn.visible-tab.active-tab {
+      background: #77c146;
+      border-color: #a4f081;
+      box-shadow: 0 0 8px #5f5fbf;
+      color: white;
+    }
+
+    .tab-btn.visible-tab {
+      background: #525297;
+      border-color: #b0b0ff;
+      box-shadow: 0 0 8px #5f5fbf;
+      color: white;
+    }
+
+    /* layout buttons */
+    .layout-buttons {
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .layout-btn {
+      background: #2d2d48;
+      border: 1px solid #56568a;
+      color: #ddd;
+      padding: 4px;
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.1s;
+    }
+
+    .layout-btn.active {
+      background: #5f5fdf;
+      border-color: #a0a0ff;
+      color: white;
+      box-shadow: 0 2px 6px #3f3faa;
+    }
+
+    /* tiny note */
+    .tiny-note {
+      font-size: 0.7rem;
+      color: #9a9ac0;
+      text-align: center;
+      border-top: 1px dashed #40406a;
+      padding-top: 10px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+<div class="top-bar">
+  <!-- Left-side drop-down menu: Select the activity tab -->
+  <select id="activeTabSelect" class="tab-selector" aria-label="Select the activity tab">
+    <option value="1">1️⃣</option>
+    <option value="2">2️⃣</option>
+    <option value="3">3️⃣</option>
+    <option value="4">4️⃣</option>
+  </select>
+
+  <div class="url-wrapper">
+    <input type="text" id="urlInput" placeholder="Enter URL" value="https://example.com" autocomplete="off">
+    <button id="goBtn"> ↪ Go </button>
+  </div>
+</div>
+
+<div class="main-panel">
+  <!-- iframe stage -->
+  <div class="iframe-stage">
+    <div class="iframe-grid" id="iframeGrid">
+      <div class="iframe-card" id="card1" data-tab="1">
+        <iframe id="iframe1" src="about:blank" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe>
+      </div>
+      <div class="iframe-card" id="card2" data-tab="2">
+        <iframe id="iframe2" src="about:blank" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe>
+      </div>
+      <div class="iframe-card" id="card3" data-tab="3">
+        <iframe id="iframe3" src="about:blank" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe>
+      </div>
+      <div class="iframe-card" id="card4" data-tab="4">
+        <iframe id="iframe4" src="about:blank" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <span style="font-size:.8rem">⚡</span>
+    </div>
+
+    <!-- 1️⃣2️⃣3️⃣4️⃣ Switch activity tags -->
+    <div class="sidebar-section">
+      <div style="font-size:1rem; color:#aaa; margin-bottom:2px;">Tab</div>
+      <div class="tab-switch-row" id="emojiTabSwitch">
+        <button class="tab-btn" data-tab="1">1️⃣</button>
+        <button class="tab-btn" data-tab="2">2️⃣</button>
+        <button class="tab-btn" data-tab="3">3️⃣</button>
+        <button class="tab-btn" data-tab="4">4️⃣</button>
+      </div>
+    </div>
+
+    <!-- Layout switching: ▢ ◫ ⊟ 田 etc -->
+    <div class="sidebar-section">
+      <div style="font-size:0.75rem; color:#aaa; margin-bottom:2px;">Layout</div>
+      <div class="layout-buttons">
+        <button class="layout-btn" data-layout="single" title="Show only activity tags">▢</button>
+        <button class="layout-btn" data-layout="grid" title="Grid (4)">田</button>
+        <button class="layout-btn" data-layout="vertical" title="Separate top and bottom (2)">⊟</button>
+        <button class="layout-btn" data-layout="horizontal" title="Separate left and right (2)">◫</button>
+      </div>
+    </div>
+
+    <div class="tiny-note">
+      <button class="help-btn" id="helpBtn" title="URL parameter description">?</button>
+    </div>
+  </div>
+</div>
+
+<script>
+    // ---------- Core States----------
+    const TAB_COUNT = 4;
+    let tabUrls = ['about:blank', 'about:blank', 'about:blank', 'about:blank'];
+    let activeTab = 1;                      // 1~4
+    let currentLayout = 'grid';             // single, grid, vertical, horizontal
+    let visibility = [1, 2, 3, 4]; 
+
+    // DOM elements
+    const gridContainer = document.getElementById('iframeGrid');
+    const iframes = [
+      document.getElementById('iframe1'),
+      document.getElementById('iframe2'),
+      document.getElementById('iframe3'),
+      document.getElementById('iframe4')
+    ];
+    const tabButtons = Array.from(document.querySelectorAll('.tab-btn'));
+    const cards = [
+      document.getElementById('card1'),
+      document.getElementById('card2'),
+      document.getElementById('card3'),
+      document.getElementById('card4')
+    ]; 
+    const urlInput = document.getElementById('urlInput');
+    const goBtn = document.getElementById('goBtn');
+    const activeTabSelect = document.getElementById('activeTabSelect');
+    const emojiTabSwitch = document.getElementById('emojiTabSwitch');
+    const visibilityListDiv = document.getElementById('visibilityList');
+    const layoutBtns = document.querySelectorAll('.layout-btn');
+    const helpBtn = document.getElementById('helpBtn');
+
+    // auto prepend https:// 
+    function formatUrl(input) {
+      let trimmed = input.trim();
+      if (!trimmed) return 'about:blank';
+      if (trimmed.startsWith('about:') || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
+        return trimmed;
+      }
+      if (!/^https?:\/\//i.test(trimmed)) {
+        return 'https://' + trimmed;
+      }
+      return trimmed;
+    }
+
+    // Initialize URL (read from parameters)
+    function initTabUrlsFromParams() {
+      const params = new URLSearchParams(window.location.search);
+      const defaultAddr = params.get('addr') || 'https://example.com';
+      
+      for (let i = 0; i < TAB_COUNT; i++) {
+        const specific = params.get(`addr${i+1}`);
+        if (specific) {
+          tabUrls[i] = formatUrl(specific);
+        } else {
+          tabUrls[i] = formatUrl(defaultAddr);
+        }
+      }
+    }
+
+    function initLayoutFromParams() {
+      const params = new URLSearchParams(window.location.search);
+      const display = params.get('display');
+      const map = { 'single':'single', 'grid':'grid', 'vertical':'vertical', 'horizontal':'horizontal' };
+      if (display && map[display.toLowerCase()]) {
+        currentLayout = map[display.toLowerCase()];
+      } else {
+        currentLayout = 'grid';
+      }
+      highlightLayoutButton(currentLayout);
+    }
+
+    function highlightLayoutButton(layout) {
+      layoutBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.layout === layout);
+      });
+    }
+
+    // sync iframe src
+    function syncIframeSrcs() {
+      for (let i = 0; i < TAB_COUNT; i++) {
+        iframes[i].src = tabUrls[i];
+      }
+    }
+
+    // Update the address bar (based on activity tags).
+    function updateUrlInputFromActive() {
+      urlInput.value = tabUrls[activeTab-1];
+      activeTabSelect.value = activeTab;
+      document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+        const tab = parseInt(btn.dataset.tab, 10);
+        btn.classList.toggle('active-tab', tab === activeTab);
+      });
+    }
+
+
+
+    // ---------- Core: Application layout and visibility ----------
+    function applyLayout() {
+      // Set grid class
+      gridContainer.className = 'iframe-grid';
+      switch (currentLayout) {
+        case 'single': gridContainer.classList.add('layout-single'); break;
+        case 'grid': gridContainer.classList.add('layout-grid'); break;
+        case 'vertical': gridContainer.classList.add('layout-vertical'); break;
+        case 'horizontal': gridContainer.classList.add('layout-horizontal'); break;
+        default: gridContainer.classList.add('layout-grid');
+      }
+
+      
+
+      let numVisible = {grid: 4, single: 1, vertical: 2, horizontal: 2}[currentLayout] || 0;
+      if(!visibility.slice(0, numVisible).includes(activeTab)){
+        adjustVisibility(activeTab);}
+
+      for (let i = 0; i < TAB_COUNT; i++) {
+        let tabBtn = tabButtons[i]
+        let card = cards[i]
+        if (visibility.indexOf(i+1) < numVisible) {
+          tabBtn.classList.add("visible-tab")
+          if(i == activeTab-1){ tabBtn.classList.add("active-tab"); card.classList.add("active-iframe"); }
+          else{ tabBtn.classList.remove("active-tab"); card.classList.remove("active-iframe"); }
+        }
+        else {
+          tabBtn.classList.remove("visible-tab");
+          tabBtn.classList.remove("active-tab");
+          card.classList.remove("active-iframe"); 
+        }
+      }
+      // Determine which cards are visible
+      let visibleIndices = visibility.slice(0, numVisible);
+      // Show/Hide Cards
+      for (let i=0; i<TAB_COUNT; i++) {
+        cards[i].style.display = visibleIndices.includes(i+1) ? 'flex' : 'none';
+      }
+    }
+
+    // ---------- Switch Activity Tab ----------
+    function setActiveTab(tabNumber) {
+      if (tabNumber === activeTab) return;
+      activeTab = tabNumber;
+      
+      updateUrlInputFromActive();
+           
+      adjustVisibility(activeTab);
+      applyLayout();
+    }
+
+    // Modify the URL of the specified tab
+    function setTabUrl(tabIndex, newUrl) {
+      const formatted = formatUrl(newUrl);
+      tabUrls[tabIndex] = formatted;
+      iframes[tabIndex].src = formatted;
+      
+      if (tabIndex === activeTab - 1) {
+        urlInput.value = formatted;
+      }
+    }
+
+    // Handling "Go to"
+    function handleGo() {
+      const rawUrl = urlInput.value.trim();
+      if (!rawUrl) return;
+      const idx = activeTab - 1;
+      setTabUrl(idx, rawUrl);
+    }
+
+    // Switch layout
+    function setLayout(layout) {
+      if (!['single','grid','vertical','horizontal'].includes(layout)) return;
+      currentLayout = layout;
+      highlightLayoutButton(layout);
+      
+      applyLayout();
+    }
+    
+    function adjustVisibility(iframeIdx){
+      visibility = visibility.filter(i => i!=iframeIdx);
+      visibility = [iframeIdx].concat(visibility);
+    }
+
+    // ---------- Help pop-up (parameter description) ----------
+    function showHelp() {
+      alert(
+        '📋 URL Parameter Description\n\n' +
+        '?addr=Default URL     (default for all tabs)\n' +
+        '&addr1=URL1           (URL for Tab 1)\n' +
+        '&addr2=URL2 ... addr4\n' +
+        '&display=layout       single / grid / vertical / horizontal\n\n' +
+        'Example: ?addr=https://example.com&addr2=https://httpbin.org&display=grid'
+      );
+    }
+
+    // ---------- initialization ----------
+    function initialize() {
+      initTabUrlsFromParams();
+      initLayoutFromParams();
+      
+      syncIframeSrcs();
+      
+      activeTab = 1;
+      updateUrlInputFromActive();
+      
+      visibility = [1, 2, 3, 4];
+      
+      
+      applyLayout();
+      
+      // --- Event Binding ---
+      activeTabSelect.addEventListener('change', (e) => {
+        const newTab = parseInt(e.target.value, 10);
+        setActiveTab(newTab);
+      });
+      
+      emojiTabSwitch.addEventListener('click', (e) => {
+        const btn = e.target.closest('.tab-btn');
+        if (!btn) return;
+        const tab = parseInt(btn.dataset.tab, 10);
+        setActiveTab(tab);
+      });
+      
+      layoutBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          setLayout(btn.dataset.layout);
+        });
+      });
+
+      goBtn.addEventListener('click', handleGo);
+      urlInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleGo();
+      });
+      helpBtn.addEventListener('click', showHelp);
+    }
+
+    initialize();
+
+</script>
+</body>
+</html>
