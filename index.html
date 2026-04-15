@@ -293,6 +293,7 @@
   <div class="url-wrapper">
     <input type="text" id="urlInput" placeholder="Enter URL" value="https://example.com" autocomplete="off">
     <button id="goBtn"> ↪ Go </button>
+    <button class="help-btn" id="openInNewTabBtn"> ⇗ </button>
   </div>
 </div>
 
@@ -344,6 +345,7 @@
     </div>
 
     <div class="tiny-note">
+      <button class="help-btn" id="copyLinkBtn" title="Copy link with embedded parameters">🔗</button>
       <button class="help-btn" id="helpBtn" title="URL parameter description">?</button>
     </div>
   </div>
@@ -576,10 +578,18 @@
       });
 
       goBtn.addEventListener('click', handleGo);
+      openInNewTabBtn.addEventListener('click', function(){window.open(urlInput.value.trim(), "_blank")})
       urlInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleGo();
       });
       helpBtn.addEventListener('click', showHelp);
+      copyLinkBtn.addEventListener('click', function(){
+        let currentUrl = new URL(window.location.href);
+        let params = new URLSearchParams();
+        for(let i=0; i<TAB_COUNT; i++){ params.set(`addr${i+1}`, tabUrls[i]);  }
+        currentUrl.search = params.toString();
+        setTimeout(()=>navigator.clipboard.writeText(currentUrl), 0);
+      })
     }
 
     initialize();
